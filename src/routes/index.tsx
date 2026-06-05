@@ -52,6 +52,7 @@ function Index() {
     return (
       <main className="min-h-screen">
         <ResultDashboard result={result} onReset={reset} />
+        <Toaster />
       </main>
     );
   }
