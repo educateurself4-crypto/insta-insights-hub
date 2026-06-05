@@ -31,8 +31,15 @@ function Index() {
     if (!handle.trim() || loading) return;
     setLoading(true);
     try {
-      const data = await analyzeHandle({ data: { username: handle.trim() } });
-      setResult(data);
+      const response = await analyzeHandle({ data: { username: handle.trim() } });
+      if (response.ok) {
+        setResult(response.result);
+        return;
+      }
+
+      toast.error("Couldn't analyze that profile", {
+        description: response.message,
+      });
     } catch (err) {
       console.error(err);
       toast.error("Couldn't analyze that profile", {
