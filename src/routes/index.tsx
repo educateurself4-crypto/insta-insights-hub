@@ -108,6 +108,7 @@ function Index() {
           </p>
         )}
       </div>
+      <Toaster />
     </main>
   );
 }
