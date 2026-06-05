@@ -50,8 +50,8 @@ function mapAnalysisResult(json: unknown, fallbackUsername: string): AnalysisRes
   if (!isRecord(payload)) return null;
 
   const reportSource = payload.analysis_report ?? payload.analysisReport;
-  const report = firstObject(tryParseJson(reportSource));
-  if (!isRecord(report)) return null;
+  const reportCandidate = firstObject(tryParseJson(reportSource));
+  const report: Record<string, unknown> = isRecord(reportCandidate) ? reportCandidate : payload;
 
   const niche = getString(report, ["niche_analysis", "nicheAnalysis"]);
   const strategy = getString(report, ["content_strategy", "contentStrategy"]);
