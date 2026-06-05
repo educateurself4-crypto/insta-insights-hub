@@ -31,7 +31,7 @@ function Index() {
     if (!handle.trim() || loading) return;
     setLoading(true);
     try {
-      const data = await analyzeHandle(handle.trim());
+      const data = await analyzeHandle({ data: { username: handle.trim() } });
       setResult(data);
     } catch (err) {
       console.error(err);
