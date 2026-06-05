@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Instagram, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Toaster } from "@/components/ui/sonner";
 import { LoadingStages } from "@/components/LoadingStages";
 import { ResultDashboard } from "@/components/ResultDashboard";
 import { analyzeHandle, type AnalysisResult } from "@/lib/analyze";
@@ -28,13 +30,17 @@ function Index() {
     e.preventDefault();
     if (!handle.trim() || loading) return;
     setLoading(true);
-    // Wait roughly the duration of the three loading stages.
-    const [data] = await Promise.all([
-      analyzeHandle(handle.trim()),
-      new Promise((r) => setTimeout(r, 4400)),
-    ]);
-    setResult(data);
-    setLoading(false);
+    try {
+      const data = await analyzeHandle(handle.trim());
+      setResult(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Couldn't analyze that profile", {
+        description: "Something went wrong. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   function reset() {
@@ -46,6 +52,7 @@ function Index() {
     return (
       <main className="min-h-screen">
         <ResultDashboard result={result} onReset={reset} />
+        <Toaster />
       </main>
     );
   }
@@ -101,6 +108,7 @@ function Index() {
           </p>
         )}
       </div>
+      <Toaster />
     </main>
   );
 }
