@@ -11,21 +11,24 @@ export type AnalyzeHandleResponse =
   | { ok: true; result: AnalysisResult }
   | { ok: false; message: string };
 
-const WEBHOOK_URL =
-  "https://n8n.srv1012222.hstgr.cloud/webhook-test/analyze-profile";
-const PRODUCTION_WEBHOOK_URL =
-  "https://n8n.srv1012222.hstgr.cloud/webhook/analyze-profile";
+const WEBHOOK_URL = "https://n8n.srv1012222.hstgr.cloud/webhook-test/analyze-profile";
+const PRODUCTION_WEBHOOK_URL = "https://n8n.srv1012222.hstgr.cloud/webhook/analyze-profile";
 
-function firstObject(value: any): any {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function firstObject(value: unknown): unknown {
   if (Array.isArray(value)) return firstObject(value[0]);
-  if (value?.json) return firstObject(value.json);
-  if (value?.body) return firstObject(value.body);
-  if (value?.data) return firstObject(value.data);
-  if (value?.result) return firstObject(value.result);
+  if (!isRecord(value)) return value;
+  if ("json" in value) return firstObject(value.json);
+  if ("body" in value) return firstObject(value.body);
+  if ("data" in value) return firstObject(value.data);
+  if ("result" in value) return firstObject(value.result);
   return value;
 }
 
-function tryParseJson(value: any): any {
+function tryParseJson(value: unknown): unknown {
   if (typeof value !== "string") return value;
   try {
     return JSON.parse(value);
@@ -34,18 +37,30 @@ function tryParseJson(value: any): any {
   }
 }
 
-function mapAnalysisResult(json: any, fallbackUsername: string): AnalysisResult | null {
-  const payload = firstObject(tryParseJson(json));
-  const report = firstObject(tryParseJson(payload?.analysis_report ?? payload?.analysisReport));
+function getString(record: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string") return value.trim();
+  }
+  return "";
+}
 
-  const niche = String(report?.niche_analysis ?? report?.nicheAnalysis ?? "").trim();
-  const strategy = String(report?.content_strategy ?? report?.contentStrategy ?? "").trim();
-  const actions = String(report?.engagement_actions ?? report?.engagementActions ?? "").trim();
+function mapAnalysisResult(json: unknown, fallbackUsername: string): AnalysisResult | null {
+  const payload = firstObject(tryParseJson(json));
+  if (!isRecord(payload)) return null;
+
+  const reportSource = payload.analysis_report ?? payload.analysisReport;
+  const report = firstObject(tryParseJson(reportSource));
+  if (!isRecord(report)) return null;
+
+  const niche = getString(report, ["niche_analysis", "nicheAnalysis"]);
+  const strategy = getString(report, ["content_strategy", "contentStrategy"]);
+  const actions = getString(report, ["engagement_actions", "engagementActions"]);
 
   if (!niche && !strategy && !actions) return null;
 
   return {
-    handle: payload?.username ?? payload?.handle ?? fallbackUsername,
+    handle: getString(payload, ["username", "handle"]) || fallbackUsername,
     niche,
     strategy,
     actions,
@@ -101,7 +116,7 @@ export const analyzeHandle = createServerFn({ method: "POST" })
         } satisfies AnalyzeHandleResponse;
       }
 
-      let json: any;
+      let json: unknown;
       try {
         json = JSON.parse(text);
       } catch {
